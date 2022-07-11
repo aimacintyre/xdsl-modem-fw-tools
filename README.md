@@ -60,8 +60,8 @@ chipsets:
    decompressed form.  For this reason this script won't find xDSL files
    embedded in SquashFS filesystem images, though it can be used to
    determine the Lantiq file version of xDSL files extracted from other
-   sources (but see also Martin Blumenstingl's ltq-xdsl-fw-info.sh script
-   mentioned in the [Credits](#Credits) section below for this purpose).
+   sources (but see also Martin Blumenstingl's `ltq-xdsl-fw-info.sh` script
+   referenced in the [Credits](#Credits) section below for this purpose).
 4. The simple pattern recognition approach implemented in this script
    doesn't make any guarantees as to the integrity of the output file(s).
    While I have attempted to verify it's output using known good source
@@ -70,7 +70,7 @@ chipsets:
    risk of failure.
 
 ## Extracting and decompressing firmware images from DrayTek device firmware files
-Draytek (https://www.draytek.com/) have manufactured a number of modems
+Draytek (https://www.draytek.com/) has manufactured a number of modems
 based on Lantiq xDSL chipsets, such as:
 - Vigor 130 (VR9)
 - Vigor 2760-Delight (VR9)
