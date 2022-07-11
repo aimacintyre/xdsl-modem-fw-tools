@@ -9,7 +9,7 @@ in another environment.  However the modem owner in many cases isn't able to
 change the xDSL chipset firmware unless the modem vendor supplies alternative
 device firmware images that users can install on (aka "flash to") the device.
 
-The tools in this collection provide support for
+The tools in this collection provide support for:
 - extracting Lantiq xDSL chipset firmware files from decompressed manufacturer device firmware images
 - extracting and decompressing firmware images from Draytek device firmware files
 
