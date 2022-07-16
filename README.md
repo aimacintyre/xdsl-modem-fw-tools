@@ -136,7 +136,7 @@ wouldn't exist without access to the following resources:
   files.  Many thanks to yath for this work!
 - The Draytek firmware file structure was understood with information
   from the Draytools project (https://github.com/ammonium/draytools - now
-  removed; I used the fork at https://github.com/krolininventions/draytools).
+  removed; I used the fork at https://github.com/krolinventions/draytools).
 
 ## Legal
 Copyright (C) 2022 Andrew I MacIntyre
