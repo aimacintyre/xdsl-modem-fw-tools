@@ -135,8 +135,8 @@ wouldn't exist without access to the following resources:
   (and the user interface file system) from Draytek modem/router firmware
   files.  Many thanks to yath for this work!
 - The Draytek firmware file structure was understood with information
-  from the Draytools project (https://github.com/ammonium/draytools/ - now
-  removed; I used the fork at https://github.com/krolininventions/draytools/).
+  from the Draytools project (https://github.com/ammonium/draytools - now
+  removed; I used the fork at https://github.com/krolininventions/draytools).
 
 ## Legal
 Copyright (C) 2022 Andrew I MacIntyre
