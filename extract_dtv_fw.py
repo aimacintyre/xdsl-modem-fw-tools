@@ -15,7 +15,7 @@
 # The Draytek firmware file structure was understood with information
 # from the Draytools project
 # (https://github.com/ammonium/draytools/ - now removed; I used the
-#  fork at https://github.com/krolininventions/draytools/).
+#  fork at https://github.com/krolinventions/draytools/).
 #
 # Rather than try and translate MIPS disassembly to Python, this
 # script implements a rudimentary MIPS assembly interpreter and
