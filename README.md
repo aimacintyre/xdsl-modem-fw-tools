@@ -138,8 +138,13 @@ wouldn't exist without access to the following resources:
   from the Draytools project (https://github.com/ammonium/draytools - now
   removed; I used the fork at https://github.com/krolinventions/draytools).
 
+## Significant updates
+
+20231227 - ```extract_ltq_xdsl_files.py``` enhanced to match recently found files with
+a different closing byte sequence.
+
 ## Legal
-Copyright (C) 2022 Andrew I MacIntyre
+Copyright (C) 2023 Andrew I MacIntyre
 
 The licence applicable to each script is specified by the [SPDX](https://spdx.dev/)
 [licence identifier](https://spdx/dev/licenses/) at the beginning of the script.

@@ -2,7 +2,7 @@
 
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-# Copyright (C) 2022 Andrew I MacIntyre <andymac@pcug.org.au>
+# Copyright (C) 2023 Andrew I MacIntyre <andymac@pcug.org.au>
 
 # Extract Lantiq xDSL files from decompressed firmware images
 #
@@ -28,7 +28,9 @@
 #   = a 78 byte sequence which appears to be present in all G.vector
 #     capable files
 # - the bulk of executable code and data comprising the file
-# - a 16 byte closing sequence common to all recognised files
+# - one of two constant byte closing sequences:
+#   = a 16 byte sequence common to most recognised files
+#   = a 6 byte sequence present in some recent files
 #
 # Note:
 #
@@ -83,25 +85,39 @@ UNDERSCORE = b'_'
 EMPTY = ''
 
 # target strings
-XDSL_TYPE = ('A', 'B')
-XDSL_START_A = b'\x00\x00\x00\x00\x0a\x00\x00\x00\x68\x24\x00\x00\x00\x00\xff\xff' \
-               b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-XDSL_START_B = b'\x00\x00\x00\x00\x0b\x00\x00\x00\x68\x24\x00\x00\x00\x00\xff\xff' \
-               b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
-               b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
-               b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
-               b'\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x00\x00'
+XDSL_START = (('A', b'\x00\x00\x00\x00\x0a\x00\x00\x00\x68\x24\x00\x00\x00\x00\xff\xff' \
+                    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'),
+              ('B', b'\x00\x00\x00\x00\x0b\x00\x00\x00\x68\x24\x00\x00\x00\x00\xff\xff' \
+                    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+                    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+                    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+                    b'\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x00\x00'))
 
-XDSL_END =     b'\x0b\x46\x42\x3e\x0c\x47\x43\x3f\x0d\x48\x44\x40\x0e\x49\x45\x41'
+XDSL_END =   (('A', b'\x0b\x46\x42\x3e\x0c\x47\x43\x3f\x0d\x48\x44\x40\x0e\x49\x45\x41'),
+              ('B', b'\xe0\x78\x60\x02\x04\x00'))
 
 XDSL_VERSION = b'\x40\x28\x23\x29'
+
+# text format templates
+FMT_VERSION = '     version:    %s'
+FMT_NO_VERS = '     version:    none identified!'
+FMT_MATCH = '\n[%d]  xDSL file found:'
+FMT_OFFSET = '     offset:     0x%x'
+FMT_TYPE_S = '     start mark: type %s'
+FMT_TYPE_E = '     end mark:   type %s'
+FMT_LENGTH = '     length:     %d bytes'
+FMT_PARTIAL = """[%d]  xDSL file with type %s start marker found at 0x%x
+     but apparent length extends beyond end of image!"""
+FMT_FEXIST = '     %s: file already exists - skipping!'
+FMT_FN_VER = 'xcpe_%s.bin'
+FMT_FN_NOV = '%s-dsl_%s.%d.bin'
 
 # runtime help
 USAGE_STR = """
 usage:  %s <source_file> [-l]
 
 where:
-  -l - (optional) list version numbers of files found but don't extract them
+  -l - (optional) list details of files found but don't extract them
 """ % sys.argv[0]
 
 
@@ -159,11 +175,9 @@ def extract_xdsl_files(src_file, list_only=False):
 
     # try and find the starting string
     hit_count = 0
-    xdsl_end_len = len(XDSL_END)
-    for xdsl_type, xdsl_start_marker in enumerate((XDSL_START_A, XDSL_START_B)):
+    for xdsl_s_type, xdsl_start_marker in XDSL_START:
         search_offset = 0
         xdsl_start_len = len(xdsl_start_marker)
-        xdsl_type = XDSL_TYPE[xdsl_type]
         while True:
             offset = src_bytes.find(xdsl_start_marker, search_offset)
             if offset > search_offset + 3:
@@ -178,32 +192,38 @@ def extract_xdsl_files(src_file, list_only=False):
                 if xdsl_end <= src_length:
 
                     # check for an end marker finishing at the specified size
-                    if src_bytes[xdsl_end - xdsl_end_len: xdsl_end] == XDSL_END:
+                    end_matched = False
+                    for xdsl_e_type, end_mark in XDSL_END:
+                        if src_bytes[xdsl_end - len(end_mark): xdsl_end] == end_mark:
+                            end_matched = True
+                            break
 
-                        # looks like a hit
+                    if end_matched:
                         hit_count += 1
                         hit_s = offset - 4
                         hit_l = xdsl_length + 4
-                        logln('[%d]  xDSL file with type %s start marker found:' % (hit_count, xdsl_type))
-                        logln('     offset:  0x%x' % hit_s)
-                        logln('     length:  %d bytes' % hit_l)
+                        logln(FMT_MATCH % hit_count)
+                        logln(FMT_OFFSET % hit_s)
+                        logln(FMT_TYPE_S % xdsl_s_type)
+                        logln(FMT_TYPE_E % xdsl_e_type)
+                        logln(FMT_LENGTH % hit_l)
                         xdsl_bytes = src_bytes[hit_s: hit_s + hit_l]
 
                         # extract version string
                         version_str = xdsl_versions(xdsl_bytes)
                         if version_str:
-                            logln('     version: %s' % version_str)
-                            xdsl_file = 'xcpe_%s.bin' % version_str
+                            logln(FMT_VERSION % version_str)
+                            xdsl_file = FMT_FN_VER % version_str
                         else:
-                            logln('     version: none identified!')
-                            xdsl_file = '%s-dsl_%s.%d.bin' % (src_file, xdsl_type, hit_count)
+                            logln(FMT_NO_VERS)
+                            xdsl_file = FMT_FN_NOV % (src_file, xdsl_type, hit_count)
 
                         # save xDSL file bytes to a file if it doesn't already exist
                         if not list_only:
                             if not os.path.exists(xdsl_file):
                                 open(xdsl_file, 'wb').write(xdsl_bytes)
                             else:
-                                logln('     %s: file already exists - skipping!' % xdsl_file)
+                                logln(FMT_FEXIST % xdsl_file)
 
                         # any others to be found?
                         search_offset = xdsl_end
@@ -214,8 +234,7 @@ def extract_xdsl_files(src_file, list_only=False):
 
                 else:
                     # anything returned would be truncated
-                    logln('[%d]  xDSL file with type %s start marker found at 0x%x' % (hit_count + 1, xdsl_type, offset))
-                    logln('     but apparent length extends beyond end of image!')
+                    logln(FMT_PARTIAL % (hit_count + 1, xdsl_s_type, offset))
                     break
 
             else:
